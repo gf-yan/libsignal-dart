@@ -111,6 +111,11 @@ that one is *this binding* working.
 
 ## Building
 
+libsignal compiles its protobuf definitions during the build, so **`protoc`
+must be on `PATH`** before `cargo` runs. That is the one non-obvious
+prerequisite; without it the build fails in `libsignal-protocol`'s `build.rs`
+on every platform.
+
 ```bash
 cd native && cargo build --release
 cd .. && dart pub get && dart test
