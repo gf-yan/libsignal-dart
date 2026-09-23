@@ -1,0 +1,100 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # The binding is only real on a platform where it has been built and run.
+  # Windows, Linux and macOS can do both, so they run the whole suite.
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Build the native library
+        run: cargo build --release --manifest-path native/Cargo.toml
+
+      - name: Report the library size
+        shell: bash
+        run: ls -l native/target/release/ | grep -Ei '\.(dll|so|dylib)$' || true
+
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+
+      - name: Benchmark
+        run: dart run example/benchmark.dart
+
+  # iOS cannot run the Dart suite here, but it can prove the Rust core builds
+  # and links for the device and simulator architectures the app ships.
+  ios:
+    name: ios (cross-compile)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+          key: ios
+
+      - name: Device (arm64)
+        run: cargo build --release --target aarch64-apple-ios --manifest-path native/Cargo.toml
+
+      - name: Simulator (arm64)
+        run: cargo build --release --target aarch64-apple-ios-sim --manifest-path native/Cargo.toml
+
+      - name: Sizes
+        run: |
+          for target in aarch64-apple-ios aarch64-apple-ios-sim; do
+            path="native/target/$target/release/liblibsignal_dart.a"
+            echo "$target: $(du -h "$path" | cut -f1)"
+            # __text is what actually lands in the app; the rest is metadata the
+            # linker drops.
+            size -m "$path" 2>/dev/null | awk '/__text/ {total += $NF} END {printf "  __text total: %.1f MB\n", total/1048576}'
+          done
+
+  # Android ships three ABIs. The NDK is already on the Linux runner.
+  android:
+    name: android (cross-compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+          key: android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build every ABI
+        working-directory: native
+        run: cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ../android/src/main/jniLibs build --release
+
+      - name: Sizes
+        run: find android/src/main/jniLibs -name '*.so' -exec ls -lh {} +
