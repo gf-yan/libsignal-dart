@@ -1,0 +1,13 @@
+# Rust
+native/target/
+
+# Dart
+.dart_tool/
+.packages
+pubspec.lock
+build/
+
+# Flutter platform build output
+example_app/build/
+**/Pods/
+**/.symlinks/

@@ -1,0 +1,21 @@
+[package]
+name = "libsignal_dart"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+name = "libsignal_dart"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+libsignal-protocol = { git = "https://github.com/signalapp/libsignal.git", tag = "v0.99.4" }
+rand = "0.9.4"
+futures-executor = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = "symbols"
