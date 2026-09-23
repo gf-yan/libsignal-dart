@@ -21,10 +21,14 @@ $ dart test
 
 ## Licence — read this first
 
-libsignal is **AGPL-3.0-only**, and so is this package. The AGPL's obligations
-travel to anything that links it. If you ship a closed-source app built on this,
-get a lawyer's answer before you do, not a forum's. Signal also offers
-commercial licences; that is the other door.
+libsignal is **AGPL-3.0-only**, and so is this package. Signal's own README says
+exactly that and nothing else — no dual licence, no commercial option on offer.
+
+Open source is not the same as unencumbered. The AGPL is copyleft: it grants the
+right to use libsignal on the condition that what you build on it carries the
+same licence, and that whoever receives your binary can get the source. Shipping
+a closed-source app on top of this is the case to take to a lawyer before you
+build on it, not after.
 
 This is not a footnote. It decides whether your application can stay private.
 
