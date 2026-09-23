@@ -29,6 +29,29 @@ enum RecordKind {
       );
 }
 
+/// The separator between a name and a device id inside a record key. A control
+/// character, so it cannot collide with a UUID or a username. Mirrors
+/// `ADDRESS_SEPARATOR` in `native/src/store.rs`.
+const String _addressSeparator = '\u0001';
+
+/// Who a session or identity record belongs to.
+class SignalAddress {
+  const SignalAddress(this.name, this.deviceId);
+
+  final String name;
+  final int deviceId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SignalAddress && other.name == name && other.deviceId == deviceId;
+
+  @override
+  int get hashCode => Object.hash(name, deviceId);
+
+  @override
+  String toString() => '$name.$deviceId';
+}
+
 /// One row of key material. [value] is null when the row should be deleted —
 /// which is how a spent one-time prekey is retired.
 class StoredRecord {
@@ -39,6 +62,17 @@ class StoredRecord {
   final Uint8List? value;
 
   bool get isDeletion => value == null;
+
+  /// The peer this row is about, for session and identity rows. Null for
+  /// prekeys, whose key is an id rather than an address.
+  SignalAddress? get address {
+    if (kind != RecordKind.session && kind != RecordKind.identity) return null;
+    final at = key.indexOf(_addressSeparator);
+    if (at <= 0) return null;
+    final deviceId = int.tryParse(key.substring(at + 1));
+    if (deviceId == null) return null;
+    return SignalAddress(key.substring(0, at), deviceId);
+  }
 
   @override
   String toString() =>

@@ -37,7 +37,8 @@ import 'src/bindings.dart';
 import 'src/wire.dart';
 
 export 'src/bindings.dart' show SignalException;
-export 'src/wire.dart' show RecordKind, StoredRecord, WireFormatException;
+export 'src/wire.dart'
+    show RecordKind, SignalAddress, StoredRecord, WireFormatException;
 
 /// Field tags in a prekey bundle. Mirrors the `TAG_*` constants in Rust.
 const int _tagRegistrationId = 1;

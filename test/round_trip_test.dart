@@ -398,6 +398,30 @@ void main() {
     );
   });
 
+  test('session rows say which peer device they belong to', () {
+    final alice = TestDevice('alice', 1);
+    final bob = TestDevice('bob', 2);
+    addTearDown(alice.dispose);
+    addTearDown(bob.dispose);
+
+    alice.session.generatePreKeys(startId: 1, count: 1);
+    alice.session.processPreKeyBundle(bob.publishBundle());
+    final changes = alice.session.takeDirty();
+
+    final sessions = changes
+        .where((record) => record.kind == RecordKind.session)
+        .map((record) => record.address)
+        .toList();
+    expect(sessions, [const SignalAddress('bob', 2)]);
+    expect(
+      changes
+          .firstWhere((record) => record.kind == RecordKind.preKey)
+          .address,
+      isNull,
+      reason: 'a prekey row is keyed by id, not by address',
+    );
+  });
+
   test('a closed session refuses to be used', () {
     final device = TestDevice('erin', 1);
     device.session.close();
